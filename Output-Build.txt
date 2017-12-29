@@ -1,0 +1,6 @@
+﻿1>------ Build started: Project: WASAPICaptureSharedTimerDriven, Configuration: Debug Win32 ------
+1>WASAPICaptureSharedTimerDriven.cpp
+1>WASAPICapture.cpp
+1>Generating Code...
+1>WASAPICaptureSharedTimerDriven.vcxproj -> C:\Users\Administrator\Documents\edit\CaptureSharedTimerDriven\Debug\WASAPICaptureSharedTimerDriven.exe
+========== Build: 1 succeeded, 0 failed, 0 up-to-date, 0 skipped ==========
