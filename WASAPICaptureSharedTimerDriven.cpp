@@ -426,6 +426,120 @@ void SaveWaveData(BYTE *CaptureBuffer, size_t BufferSize, const WAVEFORMATEX *Wa
     }
 }
 
+
+//
+//  Write the contents of a WAV file.  We take as input the data to write and the format of that data.
+//
+bool WriteRawFile(HANDLE FileHandle, const BYTE *Buffer, const size_t BufferSize)
+{
+	DWORD rawFileSize = static_cast<DWORD>(BufferSize);
+	BYTE *rawFileData = new (std::nothrow) BYTE[rawFileSize];
+	BYTE *rawFilePointer = rawFileData;
+	//WAVEHEADER *waveHeader = reinterpret_cast<WAVEHEADER *>(rawFileData);
+
+	if (rawFileData == NULL)
+	{
+		printf("Unable to allocate %d bytes to hold output raw data\n", rawFileSize);
+		return false;
+	}
+
+	/*//
+	//  Copy in the raw header - we'll fix up the lengths later.
+	//
+	CopyMemory(rawFilePointer, rawHeader, sizeof(rawHeader));
+	waveFilePointer += sizeof(WaveHeader);
+
+	//
+	//  Update the sizes in the header.
+	//
+	waveHeader->dwSize = waveFileSize - (2 * sizeof(DWORD));
+	waveHeader->dwFmtSize = sizeof(WAVEFORMATEX) + WaveFormat->cbSize;
+
+	//
+	//  Next copy in the WaveFormatex structure.
+	//
+	CopyMemory(waveFilePointer, WaveFormat, sizeof(WAVEFORMATEX) + WaveFormat->cbSize);
+	waveFilePointer += sizeof(WAVEFORMATEX) + WaveFormat->cbSize;
+
+
+	//
+	//  Then the data header.
+	//
+	CopyMemory(waveFilePointer, rawData, sizeof(rawData));
+	waveFilePointer += sizeof(WaveData);
+	*(reinterpret_cast<DWORD *>(waveFilePointer)) = static_cast<DWORD>(BufferSize);
+	waveFilePointer += sizeof(DWORD);
+	*/
+	//
+	//  And finally copy in the audio data.
+	//
+	CopyMemory(rawFilePointer, Buffer, BufferSize);
+
+	//
+	//  Last but not least, write the data to the file.
+	//
+	DWORD bytesWritten;
+	if (!WriteFile(FileHandle, rawFileData, rawFileSize, &bytesWritten, NULL))
+	{
+		printf("Unable to write raw file: %d\n", GetLastError());
+		delete[]rawFileData;
+		return false;
+	}
+
+	if (bytesWritten != rawFileSize)
+	{
+		printf("Failed to write entire raw file\n");
+		delete[]rawFileData;
+		return false;
+	}
+	delete[]rawFileData;
+	return true;
+}//
+// Save Raw data to file.
+//
+void SaveRawData(BYTE *CaptureBuffer, size_t BufferSize) {
+	wchar_t FileName[MAX_PATH];
+	HRESULT hr = StringCbCopy(FileName, sizeof(FileName), L"WASAPICaptureTimerDriven-");
+	if (SUCCEEDED(hr))
+	{
+		GUID testGuid;
+		if (SUCCEEDED(CoCreateGuid(&testGuid)))
+		{
+			wchar_t *guidString;
+			if (SUCCEEDED(StringFromCLSID(testGuid, &guidString)))
+			{
+				hr = StringCbCat(FileName, sizeof(FileName), guidString);
+				if (SUCCEEDED(hr))
+				{
+					hr = StringCbCat(FileName, sizeof(FileName), L".RAW");
+					if (SUCCEEDED(hr))
+					{
+						HANDLE rawHandle = CreateFile(FileName, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS,
+							FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+							NULL);
+						if (rawHandle != INVALID_HANDLE_VALUE)
+						{
+							if (WriteRawFile(rawHandle, CaptureBuffer, BufferSize))
+							{
+								printf("Successfully wrote raw data to %S\n", FileName);
+							}
+							else
+							{
+								printf("Unable to write raw file\n");
+							}
+							CloseHandle(rawHandle);
+						}
+						else
+						{
+							printf("Unable to open output raw file %S: %d\n", FileName, GetLastError());
+						}
+					}
+				}
+				CoTaskMemFree(guidString);
+			}
+		}
+	}
+}
 //
 //  The core of the sample.
 //
@@ -536,8 +650,11 @@ int wmain(int argc, wchar_t* argv[])
                 printf("\n");
 
                 capturer->Stop();
-
+				// Here is the bytes to capture and write into the file.
+				//
                 //
+				SaveRawData(captureBuffer, capturer->BytesCaptured());
+
                 //  We've now captured our wave data.  Now write it out in a wave file.
                 //
                 SaveWaveData(captureBuffer, capturer->BytesCaptured(), capturer->MixFormat());
