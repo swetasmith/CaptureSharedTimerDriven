@@ -532,12 +532,17 @@ bool CWASAPICapture::HandleStreamSwitchEvent()
     //  Step 4.  If we can't get the new endpoint, we need to abort the stream switch.  If there IS a new device,
     //          we should be able to retrieve it.
     //
-   // hr = _DeviceEnumerator->GetDefaultAudioEndpoint(eCapture, _EndpointRole, &_Endpoint);
-   // hr = _DeviceEnumerator->GetDefaultAudioEndpoint(eRender, _EndpointRole, &_Endpoint);
+#if 0
+    hr = _DeviceEnumerator->GetDefaultAudioEndpoint(eCapture, _EndpointRole, &_Endpoint);
+#elif 1
+    hr = _DeviceEnumerator->GetDefaultAudioEndpoint(eRender, _EndpointRole, &_Endpoint);
+#else
 	hr = _DeviceEnumerator->GetDefaultAudioEndpoint(eAll, _EndpointRole, &_Endpoint);
+#endif
+
     if (FAILED(hr))
     {
-        printf("Animesh Unable to retrieve new default device during stream switch: %x\n", hr);
+        printf("File: %s Line: %d Unable to retrieve new default device during stream switch: %x\n",__FILE__,__LINE__,hr);
         goto ErrorExit;
     }
     //
